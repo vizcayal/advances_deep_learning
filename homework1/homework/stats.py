@@ -5,12 +5,13 @@ from pathlib import Path
 
 import torch
 
-from . import bignet, half_precision, lora, low_precision, qlora
+from . import bignet, half_precision, lora, low_precision, lower_precision, qlora
 
 ALL_MODELS = {
     "bignet": bignet,
     "lora": lora,
     "low_precision": low_precision,
+    "lower_precision": lower_precision,
     "half_precision": half_precision,
     "qlora": qlora,
 }
@@ -30,7 +31,7 @@ class MemoryProfile:
         return self.total
 
     def __str__(self) -> str:
-        return f"{self.total / 1024. / 1024.} MB"
+        return f"{self.total / 1024.0 / 1024.0} MB"
 
 
 @contextmanager
@@ -104,6 +105,9 @@ class ModelStats:
         original_device = next(m.parameters()).device
         device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
+        if device == "mps":
+            torch.mps.empty_cache()
+
         m.to("cpu")
         with memory_profile(device) as mem_model:
             if device == "cpu":
@@ -120,6 +124,9 @@ class ModelStats:
 
         with memory_profile(device) as mem_backward:
             m(x).mean().backward()
+
+        if device == "mps":
+            torch.mps.empty_cache()
 
         m.to(original_device)
         return cls(

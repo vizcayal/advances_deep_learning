@@ -61,7 +61,7 @@ You have to override the `forward` function of your new `HalfLinear` layer to ca
 When you're done test your new network:
 
 ```bash
-python3 -m homework.stats bignet half_precision
+python -m homework.stats bignet half_precision
 ```
 
 You should see a 50% decrease in memory use throughout:
@@ -82,7 +82,7 @@ Backward memory           80.23 MB        0.04 MB
 You can also compare the outputs of the two models:
 
 ```bash
-python3 -m homework.compare bignet half_precision
+python -m homework.compare bignet half_precision
 ```
 
 They should match within a tolerance of 0.002.
@@ -164,6 +164,12 @@ python3 -m grader homework -v
 This will run a subset of test cases we use during the actual testing.
 The point distributions will be the same, but we will use additional test cases.
 The performance of the test grader may vary.
+
+## Extra Credit (5 pts)
+
+Can you compress the model below 4 bits per parameters?
+Let's start with `homework/lower_precision.py`. The memory requirements here are very strict (<9MB), with still a decent accuracy.
+This will require implementing your own block quantizer. Only attempt this if you have plenty of free time!
 
 ## Submission
 

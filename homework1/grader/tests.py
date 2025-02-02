@@ -70,7 +70,7 @@ class MemoryProfile:
         return self.total
 
     def __str__(self) -> str:
-        return f"{self.total / 1024. / 1024.} MB"
+        return f"{self.total / 1024.0 / 1024.0} MB"
 
 
 @contextmanager
@@ -137,12 +137,17 @@ class ModelStats:
     "Memory usage of the backward pass in MB"
 
     @classmethod
-    def from_model(cls, m: torch.nn.Module):
+    def from_model(cls, m: torch.nn.Module, device: str | None = None):
         """
         Collect statistics about a model and its memory usage, supporting CPU, CUDA, and MPS.
         """
         original_device = next(m.parameters()).device
-        device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+
+        if device == "mps":
+            torch.mps.empty_cache()
 
         m.to("cpu")
         with memory_profile(device) as mem_model:
@@ -160,6 +165,9 @@ class ModelStats:
 
         with memory_profile(device) as mem_backward:
             m(x).mean().backward()
+
+        if device == "mps":
+            torch.mps.empty_cache()
 
         m.to(original_device)
         return cls(
@@ -290,9 +298,48 @@ class HalfPrecisionGrader(QLORAGrader):
 
     TRAINABLE_PARAMS_BOUND = 20 * 1000000  # 20M
     TOTAL_PARAMS_BOUND = 20 * 1000000  # 20M
-    TOTAL_MEMORY_BOUND = 80  # MB
-    BACKWARD_MEMORY_BOUND = 80  # MB
+    TOTAL_MEMORY_BOUND = 40  # MB
+    BACKWARD_MEMORY_BOUND = 0.1  # MB
 
     def test_accuracy(self):
         # skip training half-precision model
         pass
+
+class ExtraCreditGrader(Grader):
+    """Lower Precision"""
+
+    MEAN_DIFF_BOUND = 1e-1
+    MAX_DIFF_BOUND = 5e-1
+
+    TOTAL_MEMORY_BOUND = 9  # MB
+
+    # mps is not supported for this extra credit
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    def load_model(self, model_name: str) -> torch.nn.Module:
+        """
+        Load a model from the checkpoint
+        """
+        all_models = {
+            "bignet": self.module.bignet,
+            "lower_precision": self.module.lower_precision,
+        }
+        if model_name not in all_models:
+            raise ValueError(f"Unknown model {model_name}")
+        return all_models[model_name].load(BIGNET_PTH)
+
+    @Case(score=5, timeout=5000, extra_credit=True)
+    def test_forward_diff(self):
+        """Extra Credit"""
+        lower_model = self.load_model("lower_precision").to(self.device)
+        stats = ModelStats.from_model(lower_model, self.device)
+
+        bigmodel = self.load_model("bignet").to(self.device)
+        max_diff, mean_diff = compare_model_forward(bigmodel, lower_model, self.device)
+        assert mean_diff < self.MEAN_DIFF_BOUND, f"Mean difference is too high: {mean_diff:.4f}"
+        assert max_diff < self.MAX_DIFF_BOUND, f"Max difference is too high: {max_diff:.4f}"
+
+        assert stats.actual_memory < self.TOTAL_MEMORY_BOUND, f"Actual memory is too high: {stats.actual_memory:.4f}"
+        assert (
+            stats.theoretical_memory < self.TOTAL_MEMORY_BOUND
+        ), f"Theoretical memory is too high: {stats.theoretical_memory:.4f}"

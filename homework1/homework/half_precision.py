@@ -17,8 +17,8 @@ class HalfLinear(torch.nn.Linear):
         Feel free to use the torch.nn.Linear class as a parent class (it makes load_state_dict easier, names match).
         Feel free to set self.requires_grad_ to False, we will not backpropagate through this layer.
         """
-        super().__init__(in_features, out_features, bias)
-        self.to(dtype = torch.float16)
+        super().__init__(in_features, out_features, bias, dtype=torch.float16)
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         type_x = x.dtype
@@ -40,11 +40,11 @@ class HalfBigNet(torch.nn.Module):
             super().__init__()
 
             self.model = torch.nn.Sequential(
-                torch.nn.Linear(channels, channels),
+                HalfLinear(channels, channels),
                 torch.nn.ReLU(),
-                torch.nn.Linear(channels, channels),
+                HalfLinear(channels, channels),
                 torch.nn.ReLU(),
-                torch.nn.Linear(channels, channels),
+                HalfLinear(channels, channels),
             )
 
         def forward(self, x: torch.Tensor):
