@@ -158,7 +158,7 @@ Let's start with `homework/qlora.py`. If you inherit from `Linear4Bit`, `QLoRA` 
 The test grader we provide
 
 ```bash
-python3 -m grader homework -v
+python -m grader homework -v
 ```
 
 This will run a subset of test cases we use during the actual testing.
