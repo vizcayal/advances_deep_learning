@@ -75,6 +75,7 @@ class Linear4Bit(torch.nn.Module):
             # Load the original weights and remove them from the state_dict (mark them as loaded)
             weight = state_dict[f"{prefix}weight"]  # noqa: F841
             del state_dict[f"{prefix}weight"]
+            weight = weight.flatten()
             self.weight_q4, self.weight_norm = block_quantize_4bit(weight)
 
 
@@ -82,7 +83,9 @@ class Linear4Bit(torch.nn.Module):
         with torch.no_grad():
             # TODO: Dequantize and call the layer
             # Hint: You can use torch.nn.functional.linear
+            
             weight = block_dequantize_4bit(self.weight_q4, self.weight_norm)
+            weight = weight.view(self._shape)
             output = torch.nn.functional.linear(x, weight, self.bias)
             return output
 
@@ -97,11 +100,11 @@ class BigNet4Bit(torch.nn.Module):
             super().__init__()
 
             self.model = torch.nn.Sequential(
-                Linear4Bit(in_features = channels, out_features = 1),
+                Linear4Bit(in_features = channels, out_features = channels),
                 torch.nn.ReLU(),
-                Linear4Bit(in_features = channels, out_features = 1),
+                Linear4Bit(in_features = channels, out_features = channels),
                 torch.nn.ReLU(),
-                Linear4Bit(in_features = channels, out_features = 1),
+                Linear4Bit(in_features = channels, out_features = channels),
 
             )
 
