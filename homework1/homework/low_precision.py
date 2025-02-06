@@ -97,11 +97,11 @@ class BigNet4Bit(torch.nn.Module):
             super().__init__()
 
             self.model = torch.nn.Sequential(
-                Linear4Bit(in_features = channels, out_features = channels, lora_dim = 20),
+                Linear4Bit(in_features = channels, out_features = 1),
                 torch.nn.ReLU(),
-                Linear4Bit(in_features = channels, out_features = channels, lora_dim = 20),
+                Linear4Bit(in_features = channels, out_features = 1),
                 torch.nn.ReLU(),
-                Linear4Bit(in_features = channels, out_features = channels, lora_dim = 20),
+                Linear4Bit(in_features = channels, out_features = 1),
 
             )
 
