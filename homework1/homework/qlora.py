@@ -33,23 +33,46 @@ class QLoRALinear(Linear4Bit):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # TODO: Forward. Make sure to cast inputs to self.linear_dtype and the output back to x.dtype
-        raise NotImplementedError()
+        x_dtype = x.dtype 
+        x = x.to(self.linear_dtype)
+        output =  super().forward(x) + self.lora_b(self.lora_a(x))
+        output = output.to(x_dtype)
+        return output
 
 
 class QLoRABigNet(torch.nn.Module):
     class Block(torch.nn.Module):
-        def __init__(self, channels, lora_dim, group_size):
+        def __init__(self, channels: int):
             super().__init__()
-            # TODO: Implement me (feel free to copy and reuse code from bignet.py)
-            raise NotImplementedError()
 
-        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            self.model = torch.nn.Sequential(
+                QLoRALinear(in_features = channels, out_features = channels, lora_dim = 20),
+                torch.nn.ReLU(),
+                QLoRALinear(in_features = channels, out_features = channels, lora_dim = 20),
+                torch.nn.ReLU(),
+                QLoRALinear(in_features = channels, out_features = channels, lora_dim = 20),
+
+            )
+
+        def forward(self, x: torch.Tensor):
             return self.model(x) + x
 
-    def __init__(self, lora_dim: int = 32, group_size: int = 16):
+    def __init__(self, lora_dim: int = 32):
         super().__init__()
-        # TODO: Implement me (feel free to copy and reuse code from bignet.py)
-        raise NotImplementedError()
+
+        self.model = torch.nn.Sequential(
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+            LayerNorm(BIGNET_DIM),
+            self.Block(BIGNET_DIM),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
