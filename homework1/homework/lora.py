@@ -24,7 +24,11 @@ class LoRALinear(HalfLinear):
         Hint: Remember to initialize the weights of the lora layers
         Hint: Make sure the linear layers are not trainable, but the LoRA layers are
         """
+        
         super().__init__(in_features, out_features, bias)
+        for param in super().parameters():
+          param.requires_grad = False
+
         self.linear_dtype = torch.float32
         self.lora_a = torch.nn.Linear(in_features, lora_dim, bias = False, dtype = self.linear_dtype)
         self.lora_b = torch.nn.Linear(lora_dim, out_features, bias = False, dtype = self.linear_dtype)
