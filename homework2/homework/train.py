@@ -115,11 +115,13 @@ def train(model_name_or_path: str, epochs: int = 5, batch_size: int = 64):
             fn = Path(f"checkpoints/{timestamp}_{model_name}.pth")
             fn.parent.mkdir(exist_ok=True, parents=True)
             torch.save(model, fn)
+            torch.save(model, Path(__file__).parent / f"{model_name}.pth")
 
     # Load or create the model
     if Path(model_name_or_path).exists():
         model = torch.load(model_name_or_path, weights_only=False)
         model_name = model.__class__.__name__
+        print(f'********** el modelo {model_name} existe')
     else:
         model_name = model_name_or_path
         if model_name in patch_models:
@@ -131,13 +133,16 @@ def train(model_name_or_path: str, epochs: int = 5, batch_size: int = 64):
 
     # Create the lightning model
     if isinstance(model, (autoregressive.Autoregressive)):
+        print('********* loading autoregressiveTrainer')
         l_model = AutoregressiveTrainer(model)
     else:
+        print('********* loading PatchTrainer')
         l_model = PatchTrainer(model)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     logger = TensorBoardLogger("logs", name=f"{timestamp}_{model_name}")
     trainer = L.Trainer(max_epochs=epochs, logger=logger, callbacks=[CheckPointer()])
+    print('***** comenzando el entrenamiento')
     trainer.fit(
         model=l_model,
     )

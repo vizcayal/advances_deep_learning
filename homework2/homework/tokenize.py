@@ -9,7 +9,7 @@ from tqdm import tqdm
 from .bsq import Tokenizer
 
 
-def tokenize(tokenizer: Path, output: Path, *images: Path):
+def tokenize(tokenizer: Path, output: Path, *images_or_dirs: Path):
     """
     Tokenize images using a pre-trained model.
 
@@ -18,12 +18,23 @@ def tokenize(tokenizer: Path, output: Path, *images: Path):
     images: Path to the image / images to compress.
     """
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
     tk_model = cast(Tokenizer, torch.load(tokenizer, weights_only=False).to(device))
+
+    # Expand directories to individual image paths
+    image_paths = []
+    for path in images_or_dirs:
+        path = Path(path)
+        if path.is_dir():
+            image_paths.extend(list(path.glob("*.jpg")))
+        else:
+            image_paths.append(path)
 
     # Load and compress all images
     compressed_tensors = []
-    for image_path in tqdm(images):
+    for image_path in tqdm(image_paths):
         image = Image.open(image_path)
         x = torch.tensor(np.array(image), dtype=torch.uint8, device=device)
         with torch.inference_mode():

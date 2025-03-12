@@ -8,7 +8,8 @@ DATASET_PATH = Path(__file__).parent.parent / "data"
 
 class ImageDataset:
     image_paths: list[Path]
-    _image_cache: list[torch.Tensor | None]
+    #_image_cache: list[torch.Tensor | None]
+    _image_cache: list[torch.Tensor]
     _cache_images: bool
 
     def __init__(self, split: str, cache_images: bool = True):

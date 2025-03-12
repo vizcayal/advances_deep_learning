@@ -3,6 +3,15 @@ import abc
 import torch
 
 
+def load() -> torch.nn.Module:
+    from pathlib import Path
+
+    model_name = "PatchAutoEncoder"
+    model_path = Path(__file__).parent / f"{model_name}.pth"
+    print(f"Loading {model_name} from {model_path}")
+    return torch.load(model_path, weights_only=False)
+
+
 def hwc_to_chw(x: torch.Tensor) -> torch.Tensor:
     """
     Convert an arbitrary tensor from (H, W, C) to (C, H, W) format.
@@ -32,7 +41,7 @@ class PatchifyLinear(torch.nn.Module):
     Feel free to use this directly, or as an inspiration for how to use conv the the inputs given.
     """
 
-    def __init__(self, patch_size: int = 25, latent_dim: int = 128):
+    def __init__(self, patch_size: int = 5, latent_dim: int = 128):
         super().__init__()
         self.patch_conv = torch.nn.Conv2d(3, latent_dim, patch_size, patch_size, bias=False)
 
@@ -54,7 +63,7 @@ class UnpatchifyLinear(torch.nn.Module):
     Feel free to use this directly, or as an inspiration for how to use conv the the inputs given.
     """
 
-    def __init__(self, patch_size: int = 25, latent_dim: int = 128):
+    def __init__(self, patch_size: int = 5, latent_dim: int = 128):
         super().__init__()
         self.unpatch_conv = torch.nn.ConvTranspose2d(latent_dim, 3, patch_size, patch_size, bias=False)
 
@@ -105,23 +114,25 @@ class PatchAutoEncoder(torch.nn.Module, PatchAutoEncoderBase):
 
         def __init__(self, patch_size: int, latent_dim: int, bottleneck: int):
             super().__init__()
-            self.encode = PatchifyLinear(patch_size = patch_size, latent_dim = latent_dim)
+            self.encoder = PatchifyLinear(patch_size= patch_size, latent_dim= latent_dim)
 
         def forward(self, x: torch.Tensor) -> torch.Tensor:
-            return self.encode(x)
+            return self.encoder(x)
+             
 
     class PatchDecoder(torch.nn.Module):
         def __init__(self, patch_size: int, latent_dim: int, bottleneck: int):
             super().__init__()
-            self.decode = UnpatchifyLinear(patch_size = patch_size, latent_dim = latent_dim)
+            self.decoder = UnpatchifyLinear(patch_size= patch_size, latent_dim= latent_dim)
 
         def forward(self, x: torch.Tensor) -> torch.Tensor:
-            return self.decode(x)
+            return self.decoder(x)
 
-    def __init__(self, patch_size: int = 25, latent_dim: int = 128, bottleneck: int = 128):
+    def __init__(self, patch_size: int = 5, latent_dim: int = 128, bottleneck: int = 128):
         super().__init__()
-        self.encoder = PatchEncoder( patch_size = patch_size, latent_dim = latent_dim, bottleneck = bottleneck)
-        self.decoder = PatchDecoder( patch_size = patch_size, latent_dim = latent_dim, bottleneck = bottleneck)
+        self.encoder = self.PatchEncoder(patch_size, latent_dim, bottleneck)
+        self.decoder = self.PatchDecoder(patch_size, latent_dim, bottleneck)
+        
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """
@@ -129,13 +140,12 @@ class PatchAutoEncoder(torch.nn.Module, PatchAutoEncoderBase):
         minimize (or even just visualize).
         You can return an empty dictionary if you don't have any additional terms.
         """
-        encoded_image = self.encode(x)
-        decoded_image = self.encode(encoded_image)
-        return decoded_image
+        z = self.encode(x)
+        x_recon = self.decode(z)
+        return x_recon, {}
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
-        encoded = self.encoder(x)
+        return self.encoder(x)
 
     def decode(self, x: torch.Tensor) -> torch.Tensor:
-        decoded = self.decoder(X)
-        
+        return self.decoder(x)

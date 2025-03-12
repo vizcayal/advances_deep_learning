@@ -148,7 +148,7 @@ With a positional embedding, the results look slightly better, but still far fro
 To generate your own samples use
 
 ```
-python3 -m solution.generation checkpoints/YOUR_TOKENIZER checkpoints/YOUR_AUTOREGRESSIVE_MODEL N_IMAGES OUTPUT_PATH
+python3 -m homework.generation checkpoints/YOUR_TOKENIZER checkpoints/YOUR_AUTOREGRESSIVE_MODEL N_IMAGES OUTPUT_PATH
 ```
 
 If you trained your model for only a few (even one works) epochs, the generations may look like this:
@@ -164,6 +164,44 @@ Getting better generations will require:
 ## Extra credit: Compression (5 pts)
 
 If you want to challenge yourself, try implementing the `Compressor.compress` and `Compressor.decompress` functions in `compress.py`.
+
+## Checkpoints
+During training, model checkpoints will be automatically saved in the checkpoints/ directory. The latest trained model will also be saved in the homework/ directory and will be used for grading.
+
+If you wish to submit a specific checkpoint instead of the most recent one, you can manually copy the desired checkpoint from checkpoints/ into homework/, overwriting the existing model file. This ensures that the grader evaluates your preferred checkpoint.
+
+For example, if you trained an AutoregressiveModel on 2025-02-27 and want this checkpoint to be graded, run:
+
+```bash
+cp checkpoints/2025-02-27_AutoregressiveModel.pth homework/AutoregressiveModel.pth
+```
+
+## Apple Silicon (MPS) and Bitwise Operations Bug
+
+During the implementation of Binary Spherical Quantization (BSQ), we encountered a bug related to bitwise operations on Apple Silicon (MPS) in PyTorch. Specifically, bit shifting operations (<< and >>) do not work correctly when executed on an MPS-enabled device.
+
+This issue is tracked in the PyTorch repository:
+[PyTorch Issue #147889](https://github.com/pytorch/pytorch/issues/147889)
+
+To work around this issue, we have implemented a custom bitwise operation using the `diff_sign` function. This function provides a differentiable approximation of the sign function, which is equivalent to the bitwise operation in the reference implementation.
+
+Workaround:
+Instead of using bit shifting (x << n), we strongly recommend using exponentiation of 2 (x * (2 ** n)) to ensure compatibility across different hardware.
+
+Example:
+Instead of:
+
+```python
+index = (binary_code << torch.arange(codebook_bits))
+```
+
+Use:
+
+```python
+index = (binary_code * (2 ** torch.arange(codebook_bits)))
+```
+
+This will avoid computation errors when running the BSQ model on Apple Silicon (e.g., M1, M2, M3).
 
 ## Submission
 

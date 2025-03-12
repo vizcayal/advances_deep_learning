@@ -5,6 +5,15 @@ import torch
 from .ae import PatchAutoEncoder
 
 
+def load() -> torch.nn.Module:
+    from pathlib import Path
+
+    model_name = "BSQPatchAutoEncoder"
+    model_path = Path(__file__).parent / f"{model_name}.pth"
+    print(f"Loading {model_name} from {model_path}")
+    return torch.load(model_path, weights_only=False)
+
+
 def diff_sign(x: torch.Tensor) -> torch.Tensor:
     """
     A differentiable sign function using the straight-through estimator.
@@ -37,7 +46,10 @@ class Tokenizer(abc.ABC):
 class BSQ(torch.nn.Module):
     def __init__(self, codebook_bits: int, embedding_dim: int):
         super().__init__()
-        raise NotImplementedError()
+        self.codebook_bits = codebook_bits
+        self.embedding_dim = embedding_dim
+        self.down_projection = torch.nn.Linear(embedding_dim, codebook_bits)
+        self.up_projection = torch.nn.Linear(codebook_bits, embedding_dim)
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -46,14 +58,17 @@ class BSQ(torch.nn.Module):
         - L2 normalization
         - differentiable sign
         """
-        raise NotImplementedError()
+        x = self.down_projection(x)
+        x = torch.nn.functional.normalize(x, dim = -1)
+        x = diff_sign(x)
+        return x
 
     def decode(self, x: torch.Tensor) -> torch.Tensor:
         """
         Implement the BSQ decoder:
         - A linear up-projection into embedding_dim should suffice
         """
-        raise NotImplementedError()
+        return(self.up_projection(x))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.decode(self.encode(x))
@@ -72,10 +87,10 @@ class BSQ(torch.nn.Module):
 
     def _code_to_index(self, x: torch.Tensor) -> torch.Tensor:
         x = (x >= 0).int()
-        return (x * (1 << torch.arange(x.size(-1)).to(x.device))).sum(dim=-1)
+        return (x * 2 ** torch.arange(x.size(-1)).to(x.device)).sum(dim=-1)
 
     def _index_to_code(self, x: torch.Tensor) -> torch.Tensor:
-        return 2 * ((x[..., None] & (1 << torch.arange(self._codebook_bits).to(x.device))) > 0).float() - 1
+        return 2 * ((x[..., None] & (2 ** torch.arange(self._codebook_bits).to(x.device))) > 0).float() - 1
 
 
 class BSQPatchAutoEncoder(PatchAutoEncoder, Tokenizer):
@@ -88,19 +103,27 @@ class BSQPatchAutoEncoder(PatchAutoEncoder, Tokenizer):
 
     def __init__(self, patch_size: int = 5, latent_dim: int = 128, codebook_bits: int = 10):
         super().__init__(patch_size=patch_size, latent_dim=latent_dim)
-        raise NotImplementedError()
+        self.codebook_bits = codebook_bits
+        self.bsq = BSQ(codebook_bits, latent_dim)
 
     def encode_index(self, x: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError()
+        x = self.encode(x)
+        return self.bsq.encode_index(x)
+
 
     def decode_index(self, x: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError()
+        x = self.decode(x)
+        return self.bsq.decode_index(x)
+
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError()
+        x = super().encode(x)
+        x = self.bsq.encode(x)
+        return x
 
     def decode(self, x: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError()
+        x = self.bsq.decode(x)
+        return super().decode(x)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """
@@ -118,4 +141,6 @@ class BSQPatchAutoEncoder(PatchAutoEncoder, Tokenizer):
                 ...
               }
         """
-        raise NotImplementedError()
+        x_encoded = self.encode(x)
+        x_decoded = self.decode(x_encoded)
+        return x_decoded, {}
