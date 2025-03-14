@@ -55,7 +55,7 @@ Train your network by calling:
 ```bash
 python -m homework.train PatchAutoEncoder
 ```
-
+cv         t54cf 
 ## Patch-level Quantizer (30 pts)
 
 In this part, we implement a simplified version of [Binary Spherical Quantization (BSQ)](https://arxiv.org/abs/2406.07548).

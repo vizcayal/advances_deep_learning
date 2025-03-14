@@ -44,6 +44,7 @@ class PatchifyLinear(torch.nn.Module):
     def __init__(self, patch_size: int = 5, latent_dim: int = 128):
         super().__init__()
         self.patch_conv = torch.nn.Conv2d(3, latent_dim, patch_size, patch_size, bias=False)
+        self.gelu = torch.nn.GELU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -51,7 +52,7 @@ class PatchifyLinear(torch.nn.Module):
 
         return: (B, H//patch_size, W//patch_size, latent_dim) a patchified embedding tensor
         """
-        return chw_to_hwc(self.patch_conv(hwc_to_chw(x)))
+        return chw_to_hwc(self.gelu(self.patch_conv(hwc_to_chw(x))))
 
 
 class UnpatchifyLinear(torch.nn.Module):
@@ -66,6 +67,7 @@ class UnpatchifyLinear(torch.nn.Module):
     def __init__(self, patch_size: int = 5, latent_dim: int = 128):
         super().__init__()
         self.unpatch_conv = torch.nn.ConvTranspose2d(latent_dim, 3, patch_size, patch_size, bias=False)
+
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
