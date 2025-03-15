@@ -46,7 +46,7 @@ class Tokenizer(abc.ABC):
 class BSQ(torch.nn.Module):
     def __init__(self, codebook_bits: int, embedding_dim: int):
         super().__init__()
-        self.codebook_bits = codebook_bits
+        self._codebook_bits = codebook_bits
         self.embedding_dim = embedding_dim
         self.down_projection = torch.nn.Linear(embedding_dim, codebook_bits)
         self.up_projection = torch.nn.Linear(codebook_bits, embedding_dim)
@@ -58,10 +58,10 @@ class BSQ(torch.nn.Module):
         - L2 normalization
         - differentiable sign
         """
-        #print(f'bsq:******* {x.shape = }')
+        print(f'bsq:******* {x.shape = }')
         proj_down_x = self.down_projection(x)
         #print(f'bsq:******* {proj_down_x.shape = }')
-        l2_norm_x = torch.nn.functional.normalize(proj_down_x, dim = -1)
+        l2_norm_x = torch.nn.functional.normalize(proj_down_x, p=2, dim = -1)
         #print(f'bsq:******* {l2_norm_x.shape = }')
         diff_sign_x = diff_sign(l2_norm_x)
         #print(f'bsq:******* {diff_sign_x.shape = }')
@@ -125,19 +125,19 @@ class BSQPatchAutoEncoder(PatchAutoEncoder, Tokenizer):
 
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
-        #print(f'BSQPatchAutoEncoder: {x.shape = }')
+
         ae_encoded_x = super().encode(x)
-        #print(f'BSQPatchAutoEncoder: {ae_encoded_x.shape = }')
+
         bsq_encoded_x = self.bsq.encode(ae_encoded_x)
-        #print(f'BSQPatchAutoEncoder: {bsq_encoded_x.shape = }')
+
         return bsq_encoded_x
 
     def decode(self, x: torch.Tensor) -> torch.Tensor:
-        #print(f'BSQPatchAutoEncoder: {x.shape = }')
+
         bsq_decoded_x = self.bsq.decode(x)
-        #print(f'BSQPatchAutoEncoder: {bsq_decoded_x.shape = }')
+
         ae_decoded_x = super().decode(bsq_decoded_x)
-        #print(f'BSQPatchAutoEncoder: {ae_decoded_x.shape = }')
+
         return ae_decoded_x
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
