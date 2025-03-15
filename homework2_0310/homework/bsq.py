@@ -58,7 +58,7 @@ class BSQ(torch.nn.Module):
         - L2 normalization
         - differentiable sign
         """
-        print(f'bsq:******* {x.shape = }')
+        #print(f'bsq:******* {x.shape = }')
         proj_down_x = self.down_projection(x)
         #print(f'bsq:******* {proj_down_x.shape = }')
         l2_norm_x = torch.nn.functional.normalize(proj_down_x, p=2, dim = -1)
@@ -114,14 +114,16 @@ class BSQPatchAutoEncoder(PatchAutoEncoder, Tokenizer):
         self.bsq = BSQ(codebook_bits, latent_dim)
 
     def encode_index(self, x: torch.Tensor) -> torch.Tensor:
+        x= super().encode(encoded_x)
         encoded_x = self.bsq.encode_index(x)
-        return super().encode(encoded_x)
+        return encoded_x
 
 
 
     def decode_index(self, x: torch.Tensor) -> torch.Tensor:
-        decoded_x = self.bsq.decode_index(x)
-        return super().decode(decoded_x)
+        x = self.bsq.decode_index(x)
+        decodec_x = super().decode(x)
+        return decodec_x
 
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:
