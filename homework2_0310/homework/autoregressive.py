@@ -1,7 +1,7 @@
 import abc
 
 import torch
-
+import torch.nn.functional as F
 
 def load() -> torch.nn.Module:
     from pathlib import Path
@@ -55,10 +55,38 @@ class AutoregressiveModel(torch.nn.Module, Autoregressive):
 
     def __init__(self, d_latent: int = 128, n_tokens: int = 2**10):
         super().__init__()
-        raise NotImplementedError()
+        self.d_latent = d_latent
+        self.n_tokens = n_tokens
+        self.token_embedding = torch.nn.Embedding(n_tokens, d_latent)
+        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model = d_latent, nhead = 4, dim_feedforward = 4 * d_latent)
+        self.transformer = torch.nn.TransformerEncoder(self.encoder_layer, num_layers = 2)
+        self.output_layer = torch.nn.Linear(d_latent, n_tokens)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-        raise NotImplementedError()
+        B, h, w = x.shape
+
+        seq_len = h * w
+        x_flat = x.view(B, seq_len)
+        x_emb = self.token_embedding(x_flat)
+
+        mask = torch.nn.Transformer.generate_square_subsequent_mask(x_emb.shape[1]).to(x_emb.device)
+        x_transf = self.transformer(x_emb.permute(1, 0, 2), mask=mask).permute(1, 0, 2)
+        logits = self.output_layer(x_transf)
+        logits = logits.view(B, h, w, self.n_tokens)
+        return logits, {}
+
 
     def generate(self, B: int = 1, h: int = 30, w: int = 20, device=None) -> torch.Tensor:  # noqa
-        raise NotImplementedError()
+        
+        #initiate with zeros
+        x = torch.zeros(B, h, w, dtype = torch.long, device= device)
+        
+        #iterate for predict the next token
+        for i in range(h):
+            for j in range(w):
+         
+                logits, _ = self.forward(x)
+                probs = F.softmax(logits[:,i,j], dim = -1)
+                next_token = torch.multinomial(probs, 1)
+                x[:, i, j] - next_token.squeeze()
+

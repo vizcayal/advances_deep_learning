@@ -52,6 +52,7 @@ class PatchifyLinear(torch.nn.Module):
 
         return: (B, H//patch_size, W//patch_size, latent_dim) a patchified embedding tensor
         """
+        
         return chw_to_hwc(self.gelu(self.patch_conv(hwc_to_chw(x))))
 
 
