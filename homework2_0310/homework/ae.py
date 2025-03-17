@@ -43,7 +43,10 @@ class PatchifyLinear(torch.nn.Module):
 
     def __init__(self, patch_size: int = 5, latent_dim: int = 128):
         super().__init__()
+        half_latent = latent_dim // 4
         self.patch_conv = torch.nn.Conv2d(3, latent_dim, patch_size, patch_size, bias=False)
+        self.patch_conv1 = torch.nn.Conv2d(3, half_latent, patch_size, patch_size, bias=False)
+        self.patch_conv2 = torch.nn.Conv2d(half_latent, latent_dim, patch_size, patch_size, bias=False)
         self.gelu = torch.nn.GELU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -51,9 +54,16 @@ class PatchifyLinear(torch.nn.Module):
         x: (B, H, W, 3) an image tensor dtype=float normalized to -1 ... 1
 
         return: (B, H//patch_size, W//patch_size, latent_dim) a patchified embedding tensor
+
         """
         
-        return chw_to_hwc(self.gelu(self.patch_conv(hwc_to_chw(x))))
+        conv1 = self.patch_conv1(hwc_to_chw(x))
+        gelu1 = self.gelu(conv1)
+        conv2 = self.patch_conv2(gelu1)
+        gelu2 = self.gelu(conv2)
+        return chw_to_hwc(gelu2)
+        
+        #return chw_to_hwc(self.gelu(self.patch_conv(hwc_to_chw(x))))
 
 
 class UnpatchifyLinear(torch.nn.Module):
@@ -67,7 +77,10 @@ class UnpatchifyLinear(torch.nn.Module):
 
     def __init__(self, patch_size: int = 5, latent_dim: int = 128):
         super().__init__()
+        half_latent = latent_dim // 4
         self.unpatch_conv = torch.nn.ConvTranspose2d(latent_dim, 3, patch_size, patch_size, bias=False)
+        self.unpatch_conv1 = torch.nn.ConvTranspose2d(half_latent, 3, patch_size, patch_size, bias=False)
+        self.unpatch_conv2 = torch.nn.ConvTranspose2d(latent_dim, half_latent, patch_size, patch_size, bias=False)
 
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -76,7 +89,12 @@ class UnpatchifyLinear(torch.nn.Module):
 
         return: (B, H * patch_size, W * patch_size, 3) a image tensor
         """
-        return chw_to_hwc(self.unpatch_conv(hwc_to_chw(x)))
+        conv2 = self.unpatch_conv2(hwc_to_chw(x))
+        conv1 = self.unpatch_conv1(conv2)
+        return chw_to_hwc(conv1)
+
+        #return chw_to_hwc(self.unpatch_conv(hwc_to_chw(x)))
+        #return chw_to_hwc(self.unpatch_conv(hwc_to_chw(x)))
 
 
 class PatchAutoEncoderBase(abc.ABC):
