@@ -78,7 +78,11 @@ class BSQ(torch.nn.Module):
         return proj_up_x
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.decode(self.encode(x))
+        x_encoded = self.encode(x)
+        x_encoded_index = self.encode_index(x_encoded)
+        x_decoded_index = self.decode_index(x_encoded_index)
+        x_decoded =  self.decode(x_decoded_index)
+        return self.decode_index(x_decoded)
 
     def encode_index(self, x: torch.Tensor) -> torch.Tensor:
         """

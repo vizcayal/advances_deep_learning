@@ -40,14 +40,14 @@ class PatchifyLinear(torch.nn.Module):
         self.gelu = torch.nn.GELU()
         
         self.patch_conv2 = torch.nn.Conv2d(latent_dim // 4, latent_dim, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = torch.nn.BatchNorm2d(latent_dim)
+        #self.bn2 = torch.nn.BatchNorm2d(latent_dim)
         
-        self.final_conv = torch.nn.Conv2d(latent_dim, latent_dim, kernel_size=patch_size, stride=patch_size, bias=False)
+        #self.final_conv = torch.nn.Conv2d(latent_dim, latent_dim, kernel_size=patch_size, stride=patch_size, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = hwc_to_chw(x)  # Convert to (B, C, H, W)
         x = self.gelu(self.bn1(self.patch_conv1(x)))
-        x = self.bn2(self.patch_conv2(x))
+        x = self.patch_conv2(x)
         #x = self.final_conv(x)  # Patchify step
         return chw_to_hwc(x)  # Convert back to (B, H//patch_size, W//patch_size, latent_dim)
 
