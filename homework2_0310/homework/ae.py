@@ -33,50 +33,44 @@ def chw_to_hwc(x: torch.Tensor) -> torch.Tensor:
 
 
 class PatchifyLinear(torch.nn.Module):
-    """
-    Takes an image tensor of the shape (B, H, W, 3) and patchifies it into
-    an embedding tensor of the shape (B, H//patch_size, W//patch_size, latent_dim).
-    It applies a linear transformation to each input patch
-
-    Feel free to use this directly, or as an inspiration for how to use conv the the inputs given.
-    """
-
     def __init__(self, patch_size: int = 5, latent_dim: int = 128):
         super().__init__()
-        self.patch_conv = torch.nn.Conv2d(3, latent_dim, patch_size, patch_size, bias=False)
+        self.patch_conv1 = torch.nn.Conv2d(3, latent_dim // 4, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn1 = torch.nn.BatchNorm2d(latent_dim // 4)
         self.gelu = torch.nn.GELU()
+        
+        self.patch_conv2 = torch.nn.Conv2d(latent_dim // 4, latent_dim, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = torch.nn.BatchNorm2d(latent_dim)
+        
+        self.final_conv = torch.nn.Conv2d(latent_dim, latent_dim, kernel_size=patch_size, stride=patch_size, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        x: (B, H, W, 3) an image tensor dtype=float normalized to -1 ... 1
+        x = hwc_to_chw(x)  # Convert to (B, C, H, W)
+        x = self.gelu(self.bn1(self.patch_conv1(x)))
+        x = self.gelu(self.bn2(self.patch_conv2(x)))
+        x = self.final_conv(x)  # Patchify step
+        return chw_to_hwc(x)  # Convert back to (B, H//patch_size, W//patch_size, latent_dim)
 
-        return: (B, H//patch_size, W//patch_size, latent_dim) a patchified embedding tensor
-        """
-        
-        return chw_to_hwc(self.gelu(self.patch_conv(hwc_to_chw(x))))
 
 
 class UnpatchifyLinear(torch.nn.Module):
-    """
-    Takes an embedding tensor of the shape (B, w, h, latent_dim) and reconstructs
-    an image tensor of the shape (B, w * patch_size, h * patch_size, 3).
-    It applies a linear transformation to each input patch
-
-    Feel free to use this directly, or as an inspiration for how to use conv the the inputs given.
-    """
-
     def __init__(self, patch_size: int = 5, latent_dim: int = 128):
         super().__init__()
-        self.unpatch_conv = torch.nn.ConvTranspose2d(latent_dim, 3, patch_size, patch_size, bias=False)
-
+        self.unpatch_conv1 = torch.nn.ConvTranspose2d(latent_dim, latent_dim, kernel_size=patch_size, stride=patch_size, bias=False)
+        self.bn1 = torch.nn.BatchNorm2d(latent_dim)
+        self.gelu = torch.nn.GELU()
+        
+        self.unpatch_conv2 = torch.nn.Conv2d(latent_dim, latent_dim // 4, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = torch.nn.BatchNorm2d(latent_dim // 4)
+        
+        self.final_conv = torch.nn.Conv2d(latent_dim // 4, 3, kernel_size=3, stride=1, padding=1, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        x: (B, w, h, latent_dim) an embedding tensor
-
-        return: (B, H * patch_size, W * patch_size, 3) a image tensor
-        """
-        return chw_to_hwc(self.unpatch_conv(hwc_to_chw(x)))
+        x = hwc_to_chw(x)  # Convert to (B, C, H, W)
+        x = self.gelu(self.bn1(self.unpatch_conv1(x)))
+        x = self.gelu(self.bn2(self.unpatch_conv2(x)))
+        x = self.final_conv(x)  # Final reconstruction
+        return chw_to_hwc(x)  # Convert back to (B, H, W, 3)
 
 
 class PatchAutoEncoderBase(abc.ABC):
