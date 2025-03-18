@@ -182,7 +182,7 @@ class BSQPatchAutoEncoder(PatchAutoEncoder, Tokenizer):
         #                 }
         
         #print(f'BatchPatchAutoEncoder.forward: {x.shape = }')
-        x_encoded = self.encode(x)
+        x_encoded = self.encode_index(x)
         #print(f'BatchPatchAutoEncoder.forward: {x_encoded.shape = }')
-        x_decoded = self.decode(x_encoded)
+        x_decoded = self.decode_index(x_encoded)
         return x_decoded, {}
