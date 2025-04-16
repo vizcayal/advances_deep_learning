@@ -65,7 +65,7 @@ class BaseLLM:
 
     @overload
     def batched_generate(
-        self, prompts: list[str], num_return_sequences: None = None, temperature: float = 0
+        self, prompts: list[str], num_return_sequences: None = 1, temperature: float = 0.01
     ) -> list[str]:
         """
         Batched version of `generate` method.
@@ -74,7 +74,7 @@ class BaseLLM:
 
     @overload
     def batched_generate(
-        self, prompts: list[str], num_return_sequences: int, temperature: float = 0
+        self, prompts: list[str], num_return_sequences: int, temperature: float = 0.01
     ) -> list[list[str]]:
         """
         Batched version of `generate` method.
@@ -82,7 +82,7 @@ class BaseLLM:
         """
 
     def batched_generate(
-        self, prompts: list[str], num_return_sequences: int | None = None, temperature: float = 0
+        self, prompts: list[str], num_return_sequences: int | None = 1, temperature: float = 0.01
     ) -> list[str] | list[list[str]]:
         """
         Batched version of `generate` method.
@@ -127,7 +127,7 @@ class BaseLLM:
             prompts,
             return_tensors="pt",
             padding=True,
-            left_padding=True,
+            padding_side = 'left',
             truncation=True,
             max_length=self.tokenizer.model_max_length,
         ).to(self.device)
