@@ -42,6 +42,8 @@ class BaseLLM:
         - decode the outputs with self.tokenizer.decode
 
         """
+
+        
         prompt_tokenized = self.tokenizer(
             prompt,
             return_tensors="pt",
