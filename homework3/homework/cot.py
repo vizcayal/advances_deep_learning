@@ -1,3 +1,4 @@
+from IPython.core.inputtransformer2 import tokenize
 from .base_llm import BaseLLM
 
 
@@ -8,8 +9,21 @@ class CoTModel(BaseLLM):
         better if you provide a chat template. self.tokenizer.apply_chat_template can help here
         """
 
-        raise NotImplementedError()
-
+        message = [
+                    {
+                      "role":"system",
+                      "content":"your are a converter assistant for converting units\
+                                for example if you are asked to transform 1 m to cm\
+                                you multiply 1 by 100 and the answer is 100 cm\
+                                please be concise"
+                    },
+                    {
+                      "role":"user",
+                      "content": question
+                    }
+                  ]
+        formatted_prompt = self.tokenizer.apply_chat_template(message, add_generation_prompt = True, tokenize = False )
+        return formatted_prompt
 
 def load() -> CoTModel:
     return CoTModel()

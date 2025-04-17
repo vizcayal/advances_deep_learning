@@ -1,4 +1,5 @@
 from typing import overload
+#import ipdb
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -52,18 +53,22 @@ class BaseLLM:
             truncation=True,
             max_length=self.tokenizer.model_max_length,
         ).to(self.device)
+
+
+
         # Generate the output
         output = self.model.generate(
             **prompt_tokenized,
             max_new_tokens=50,
-            do_sample=True,
+            do_sample=False,
             temperature=0.7,
             num_return_sequences=1,
             eos_token_id=self.tokenizer.eos_token_id,
         )
         # Decode the output
-        output = self.tokenizer.decode(output[0], skip_special_tokens=True)
-        
+        output = self.tokenizer.decode(output[0], skip_special_tokens=False)
+        # print(f'{len(output) = }')
+        # print(f'{output = }')
         return output
 
     @overload
@@ -134,26 +139,28 @@ class BaseLLM:
             truncation=True,
             max_length=self.tokenizer.model_max_length,
         ).to(self.device)
+
         # Generate the output
         output = self.model.generate(
-            **prompt_tokenized,
+            prompt_tokenized['input_ids'],
+            attention_mask = prompt_tokenized['attention_mask'],
             max_new_tokens=50,
-            do_sample=True,
+            do_sample=False,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
             eos_token_id=self.tokenizer.eos_token_id,
         )
         # Decode the output
         output = self.tokenizer.batch_decode(
-            output[:, prompt_tokenized["input_ids"].shape[1] :], skip_special_tokens=True
+            output[:, prompt_tokenized["input_ids"].shape[1] :], skip_special_tokens=False
         )
         # If num_return_sequences is None, return a list of strings
-        if num_return_sequences is None:
-            return output
-        # Otherwise, return a list of lists of strings
-        else:
-            return [output[i : i + num_return_sequences] for i in range(0, len(output), num_return_sequences)]
-    
+        # print(f'{prompts = }')
+        # print(f'{output = }')
+        output_lst = [str(elem) for elem in output]
+
+        return output
+      
 
     def answer(self, *questions) -> list[float]:
         """
