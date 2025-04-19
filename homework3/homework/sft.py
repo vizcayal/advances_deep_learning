@@ -59,7 +59,7 @@ def load() -> BaseLLM:
     model_name = "sft_model"
     model_path = Path(__file__).parent / model_name
 
-    llm = BaseLLM()
+    llm = BaseLLM("HuggingFaceTB/SmolLM2-360M-Instruct")
     llm.model = PeftModel.from_pretrained(llm.model, model_path).to(llm.device)
     llm.model.eval()
 
@@ -140,7 +140,7 @@ def train_model(
 
     # Load the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
-    llm = load("HuggingFaceTB/SmolLM2-360M-Instruct")
+    llm = load()
 
     # Create the LoRA config
     config = LoraConfig(
