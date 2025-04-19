@@ -12,7 +12,7 @@ class CoTModel(BaseLLM):
         message = [
                     {
                       "role":"system",
-                      "content":"You are a conversion calculator. place the answer in <answer> tags. avoid verbose explanation. "
+                      "content":"You are a conversion calculator. avoid verbose explanation. "
                     },
                     {
                       "role":"user",

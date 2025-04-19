@@ -124,6 +124,7 @@ class TokenizedDataset:
     def __getitem__(self, idx):
         formated_data = self.format_fn(*self.data[idx])
         return tokenize(self.tokenizer, **formated_data)
+    
 
 
 def train_model(
@@ -138,8 +139,8 @@ def train_model(
     from peft import get_peft_model, LoraConfig
 
     # Load the tokenizer and model
-    tokenizer = AutoTokenizer.from_pretrained("smolllm2")
-    llm = load()
+    tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
+    llm = load("HuggingFaceTB/SmolLM2-360M-Instruct")
 
     # Create the LoRA config
     config = LoraConfig(
@@ -151,16 +152,15 @@ def train_model(
     )
 
     # Create the LoRA model
-    model.enable_input_require_grads()
     model = get_peft_model(llm.model, config)
+    model.enable_input_require_grads()
     
     # Create the dataset
     trainset = Dataset("train")
     validset = Dataset("valid")
 
-    train_dataset = TokenizedDataset(tokenizer, trainset, format_example)
-    eval_dataset = TokenizedDataset(tokenizer, validset, format_example)
-
+    train_dataset_tokenized = TokenizedDataset(tokenizer, trainset, format_example)
+    
     # Create the training arguments
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -181,8 +181,7 @@ def train_model(
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
+        train_dataset=train_dataset_tokenized,
     )
 
     # Train the model
