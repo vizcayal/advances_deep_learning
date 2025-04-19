@@ -140,8 +140,11 @@ def train_model(
 
     # Load the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
-    llm = load()
-
+    model = AutoModelForCausalLM.from_pretrained(
+        "HuggingFaceTB/SmolLM2-360M-Instruct",
+        torch_dtype="auto",
+        device_map="auto",
+    )
     # Create the LoRA config
     config = LoraConfig(
         r=8,
@@ -150,17 +153,17 @@ def train_model(
         bias="none",
         task_type="CAUSAL_LM",
     )
-
     # Create the LoRA model
-    model = get_peft_model(llm.model, config)
+    model = get_peft_model(model, config)
     model.enable_input_require_grads()
-    
-    # Create the dataset
-    trainset = Dataset("train")
-    validset = Dataset("valid")
-
-    train_dataset_tokenized = TokenizedDataset(tokenizer, trainset, format_example)
-    
+    model.print_trainable_parameters()
+    # Load the dataset
+    dataset = Dataset("train")
+    tokenized_dataset = TokenizedDataset(
+        tokenizer,
+        dataset,
+        format_fn=format_example,
+    )
     # Create the training arguments
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -171,23 +174,27 @@ def train_model(
         num_train_epochs=5,
         learning_rate=1e-4,
         save_strategy="epoch",
-        evaluation_strategy="epoch",
-        load_best_model_at_end=True,
-        save_total_limit=1,
-        **kwargs,
     )
-
     # Create the trainer
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=train_dataset_tokenized,
+        train_dataset=tokenized_dataset,
+        eval_dataset=tokenized_dataset,
     )
-
     # Train the model
     trainer.train()
     # Save the model
     trainer.save_model(output_dir)
+    # Save the tokenizer
+    tokenizer.save_pretrained(output_dir)
+    # Save the LoRA config
+    config.save_pretrained(output_dir)
+    # Save the model
+    model.save_pretrained(output_dir)
+    # Save the tokenizer
+    tokenizer.save_pretrained(output_dir)
+    
     test_model(output_dir)
 
 
