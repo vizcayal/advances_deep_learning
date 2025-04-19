@@ -1,11 +1,60 @@
+## Supervised fine-tuning (25 pts)
+
+# We will now go and fine-tune SmolLM2 to answer questions directly.
+# You should NOT use the chat template here, instead simply ask the model to complete a question with `<answer>{answer}</answer>`, where answer is the ground truth `float` answer.
+
+# Due to file-size limitations you will not be able to submit a fully fine-tuned model, but will need to submit a LoRA adapter.
+# Use the `get_peft_model` function to convert the `BaseLLM.model` into a LoRA adapted version.
+# The function above takes a `LoraConfig` argument, most parameters are quite flexible.
+# Our recommendation is to use:
+
+# - `target_modules="all-linear"` this will add an adapter to all layers
+# - `bias="none"` and `task_type="CAUSAL_LM"`
+# - `r` rank such that the overall model size stays below 20MB
+# - `lora_alpha` about 4-5 times the rank
+
+# If you're using a GPU call `model.enable_input_require_grads()` after adding the LoRA adapter to avoid a bug with `gradient_checkpointing=True,` in the `TrainingArguments` below.
+
+# We will use the higgingface `Trainer` to fine-tune the model.
+# The trainer takes 3 arguments:
+
+# - Our LoRA model
+# - `TrainingArguments`
+#   - Use `gradient_checkpointing=True` to save GPU memory
+#   - Set a reasonable `learning_rate`
+#   - Use `output_dir=output_dir`, `logging_dir=output_dir`, `report_to="tensorboard"` to create a
+#     tensorboard log and checkpoints in `output_dir`
+#   - You shouldn't have to train for more than 5 `num_train_epochs` with a `per_device_train_batch_size=32`
+# - A `TokenizedDataset`. We provide significant part of the tokenization starter code here.
+
+# Finally, call `Trainer.train` to train the model.
+
+# Either write a script that moves the final checkpoint in the correct directory or call `Trainer.save` to write the model to the `homework/sft_model` directory.
+
+# Train your model with
+
+# ```bash
+# python -m homework.sft train
+# ```
+
+# and make sure it can be loaded by the grader
+
+# ```bash
+# python -m homework.sft train
+# ```
+
+
 from .base_llm import BaseLLM
 from .data import Dataset, benchmark
+
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
 def load() -> BaseLLM:
     from pathlib import Path
-
     from peft import PeftModel
+
+    
 
     model_name = "sft_model"
     model_path = Path(__file__).parent / model_name
@@ -49,7 +98,10 @@ def format_example(prompt: str, answer: str) -> dict[str, str]:
     """
     Construct a question / answer pair. Consider rounding the answer to make it easier for the LLM.
     """
-    raise NotImplementedError()
+    return {
+        "question": prompt,
+        "answer": float(answer),
+    }
 
 
 class TokenizedDataset:
@@ -78,8 +130,71 @@ def train_model(
     output_dir: str,
     **kwargs,
 ):
-    raise NotImplementedError()
+    """
+    Train the model with the given arguments.
+    The model is saved in `output_dir`.
+    """
+    from transformers import Trainer, TrainingArguments
+    from peft import get_peft_model, LoraConfig
+
+    # Load the tokenizer and model
+    tokenizer = AutoTokenizer.from_pretrained("smolllm2")
+    llm = load()
+
+    # Create the LoRA config
+    config = LoraConfig(
+        r=8,
+        lora_alpha=32,
+        target_modules=["all-linear"],
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
+
+    # Create the LoRA model
+    model = get_peft_model(llm.model, config)
+    model.enable_input_require_grads()
+
+    # Create the dataset
+    trainset = Dataset("train")
+    validset = Dataset("valid")
+
+    train_dataset = TokenizedDataset(tokenizer, trainset, format_example)
+    eval_dataset = TokenizedDataset(tokenizer, validset, format_example)
+
+    # Create the training arguments
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        logging_dir=output_dir,
+        report_to="tensorboard",
+        gradient_checkpointing=True,
+        per_device_train_batch_size=32,
+        num_train_epochs=5,
+        learning_rate=1e-4,
+        save_strategy="epoch",
+        evaluation_strategy="epoch",
+        load_best_model_at_end=True,
+        save_total_limit=1,
+        **kwargs,
+    )
+
+    # Create the trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+    )
+
+    # Train the model
+    trainer.train()
+    # Save the model
+    trainer.save_model(output_dir)
     test_model(output_dir)
+
+
+
+
+
 
 
 def test_model(ckpt_path: str):
