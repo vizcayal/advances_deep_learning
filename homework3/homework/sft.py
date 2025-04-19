@@ -151,9 +151,9 @@ def train_model(
     )
 
     # Create the LoRA model
-    model = get_peft_model(llm.model, config)
     model.enable_input_require_grads()
-
+    model = get_peft_model(llm.model, config)
+    
     # Create the dataset
     trainset = Dataset("train")
     validset = Dataset("valid")
@@ -190,11 +190,6 @@ def train_model(
     # Save the model
     trainer.save_model(output_dir)
     test_model(output_dir)
-
-
-
-
-
 
 
 def test_model(ckpt_path: str):
