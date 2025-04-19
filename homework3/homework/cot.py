@@ -39,7 +39,6 @@ class CoTModel(BaseLLM):
                       "role":"assistant",
                       "content": "1 hour = 3600 seconds. 2 hours = 2 * 3600 years = <answer>7200<answer>"
                     },
-                    ,
                     {
                       "role":"user",
                       "content": "How many gram are there per 6 kg?"
