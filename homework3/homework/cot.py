@@ -12,8 +12,7 @@ class CoTModel(BaseLLM):
         message = [
                     {
                       "role":"system",
-                      "content":"your are a converter assistant for converting units \
-                                please be concise"
+                      "content":"You are a conversion calculator. place the answer in <answer> tags. avoid verbose explanation. "
                     },
                     {
                       "role":"user",
