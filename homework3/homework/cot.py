@@ -12,14 +12,32 @@ class CoTModel(BaseLLM):
         message = [
                     {
                       "role":"system",
-                      "content":"your are a converter assistant for converting units\
-                                for example if you are asked to transform 1 m to cm\
-                                you multiply 1 by 100 and the answer is 100 cm\
+                      "content":"your are a converter assistant for converting units \
                                 please be concise"
                     },
                     {
                       "role":"user",
-                      "content": question
+                      "content": "Can you change 2 hour to its equivalent in minutes?"
+                    },
+                    {
+                      "role":"assistant",
+                      "content": "1 hour = 60 min. 2 hour * 60 is <answer>120.0<answer>"
+                    },
+                    {
+                      "role":"user",
+                      "content": "Express 4 centuries as a quantity of week.?"
+                    },
+                    {
+                      "role":"assistant",
+                      "content": "1 century = 100 years. 1 year = 52.18 weeks. 4 centuries = 4 * 100 years = 400. 400 years * 52.1786 <answer>20871.44<answer>"
+                    },
+                    {
+                      "role":"user",
+                      "content": "What is the conversion of 2 hour to seconds?"
+                    },
+                    {
+                      "role":"assistant",
+                      "content": "1 hour = 3600 seconds. 2 hours = 2 * 3600 years = <answer>7200<answer>"
                     }
                   ]
         formatted_prompt = self.tokenizer.apply_chat_template(message, add_generation_prompt = True, tokenize = False )
