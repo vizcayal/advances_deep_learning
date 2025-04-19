@@ -38,7 +38,18 @@ class CoTModel(BaseLLM):
                     {
                       "role":"assistant",
                       "content": "1 hour = 3600 seconds. 2 hours = 2 * 3600 years = <answer>7200<answer>"
-                    }
+                    },
+                    ,
+                    {
+                      "role":"user",
+                      "content": "How many gram are there per 6 kg?"
+                    },
+                    {
+                      "role":"assistant",
+                      "content": "1 kg = 1000 grams. 6 kgs = 6 * 1000 years = <answer>6000<answer>"
+                    },
+
+
                   ]
         formatted_prompt = self.tokenizer.apply_chat_template(message, add_generation_prompt = True, tokenize = False )
         return formatted_prompt
