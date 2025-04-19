@@ -48,6 +48,11 @@ class CoTModel(BaseLLM):
                       "role":"assistant",
                       "content": "1 kg = 1000 grams. 6 kgs = 6 * 1000 years = <answer>6000<answer>"
                     },
+                    {
+                      "role":"user",
+                      "content": question
+                    },
+                   
 
 
                   ]
