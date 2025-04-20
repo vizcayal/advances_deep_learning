@@ -54,8 +54,6 @@ def load() -> BaseLLM:
     from pathlib import Path
     from peft import PeftModel
 
-    
-
     model_name = "sft_model"
     model_path = Path(__file__).parent / model_name
 
@@ -98,10 +96,7 @@ def format_example(prompt: str, answer: str) -> dict[str, str]:
     """
     Construct a question / answer pair. Consider rounding the answer to make it easier for the LLM.
     """
-    return {
-        "question": prompt,
-        "answer": float(answer),
-    }
+    return {"question": prompt, "answer": f"<answer>{float(answer):.1f}</answer>"}
 
 
 class TokenizedDataset:
@@ -124,8 +119,10 @@ class TokenizedDataset:
     def __getitem__(self, idx):
         formated_data = self.format_fn(*self.data[idx])
         return tokenize(self.tokenizer, **formated_data)
+    # Load the tokenizer using baseLLm.tokenizer
+    # Load the dataset using Dataset
+    # Use the format_fn to convert the dataset into a dict with entr
     
-
 
 def train_model(
     output_dir: str,
@@ -138,33 +135,24 @@ def train_model(
     from transformers import Trainer, TrainingArguments
     from peft import get_peft_model, LoraConfig
 
-    # Load the tokenizer and model
-    tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
-    model = AutoModelForCausalLM.from_pretrained(
-        "HuggingFaceTB/SmolLM2-360M-Instruct",
-        torch_dtype="auto",
-        device_map="auto",
-    )
-    # Create the LoRA config
-    config = LoraConfig(
+    # Load the tokenizer
+    llm = BaseLLM("HuggingFaceTB/SmolLM2-360M-Instruct")
+
+    # configure the LoRA adapter
+    config_lora = LoraConfig(
         r=8,
         lora_alpha=32,
         target_modules=["all-linear"],
         bias="none",
         task_type="CAUSAL_LM",
     )
-    # Create the LoRA model
-    model = get_peft_model(model, config)
-    model.enable_input_require_grads()
-    model.print_trainable_parameters()
-    # Load the dataset
-    dataset = Dataset("train")
-    tokenized_dataset = TokenizedDataset(
-        tokenizer,
-        dataset,
-        format_fn=format_example,
+
+    llm.model = get_peft_model(llm.model, config_lora)
+    train_dataset = Dataset("train")
+    formatted_train_dataset = TokenizedDataset(
+        llm.tokenizer, train_dataset, format_example
     )
-    # Create the training arguments
+
     training_args = TrainingArguments(
         output_dir=output_dir,
         logging_dir=output_dir,
@@ -173,29 +161,19 @@ def train_model(
         per_device_train_batch_size=32,
         num_train_epochs=5,
         learning_rate=1e-4,
-        save_strategy="epoch",
     )
-    # Create the trainer
+    # Create the Trainer
     trainer = Trainer(
-        model=model,
+        model=llm.model,
         args=training_args,
-        train_dataset=tokenized_dataset,
-        eval_dataset=tokenized_dataset,
+        train_dataset=formatted_train_dataset,
     )
     # Train the model
     trainer.train()
-    # Save the model
     trainer.save_model(output_dir)
-    # Save the tokenizer
-    tokenizer.save_pretrained(output_dir)
-    # Save the LoRA config
-    config.save_pretrained(output_dir)
-    # Save the model
-    model.save_pretrained(output_dir)
-    # Save the tokenizer
-    tokenizer.save_pretrained(output_dir)
-    
     test_model(output_dir)
+
+
 
 
 def test_model(ckpt_path: str):

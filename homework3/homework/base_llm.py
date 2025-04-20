@@ -44,7 +44,6 @@ class BaseLLM:
         - decode the outputs with self.tokenizer.decode
 
         """
-
         
         prompt_tokenized = self.tokenizer(
             prompt,
@@ -154,9 +153,7 @@ class BaseLLM:
         output = self.tokenizer.batch_decode(
             output[:, prompt_tokenized["input_ids"].shape[1] :], skip_special_tokens=False
         )
-        # If num_return_sequences is None, return a list of strings
-        # print(f'{prompts = }')
-        # print(f'{output = }')
+
         output_lst = [str(elem) for elem in output]
 
         return output
