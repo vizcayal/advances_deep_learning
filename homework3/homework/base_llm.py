@@ -59,9 +59,9 @@ class BaseLLM:
         # Generate the output
         output = self.model.generate(
             **prompt_tokenized,
-            max_new_tokens=50,
+            max_new_tokens=60,
             do_sample=True,
-            temperature=0.7,
+            temperature=0.01,
             num_return_sequences=1,
             eos_token_id=self.tokenizer.eos_token_id,
         )
@@ -144,7 +144,7 @@ class BaseLLM:
         output = self.model.generate(
             prompt_tokenized['input_ids'],
             attention_mask = prompt_tokenized['attention_mask'],
-            max_new_tokens=50,
+            max_new_tokens=60,
             do_sample=True,
             temperature=temperature,
             num_return_sequences=num_return_sequences,
