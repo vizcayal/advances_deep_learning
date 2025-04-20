@@ -98,10 +98,7 @@ def format_example(prompt: str, answer: str) -> dict[str, str]:
     """
     Construct a question / answer pair. Consider rounding the answer to make it easier for the LLM.
     """
-    return {
-        "question": prompt,
-        "answer": float(answer),
-    }
+    return {"question": prompt, "answer": f"<answer>{float(answer):.3f}</answer>"}
 
 
 class TokenizedDataset:
@@ -130,7 +127,7 @@ class TokenizedDataset:
 def train_model(
     output_dir: str = "homework/sft_model",
     learning_rate: float = 2e-4,
-    num_train_epochs: int = 5,
+    num_train_epochs: int = 10,
     per_device_train_batch_size: int = 32,
 ):
   from transformers import Trainer, TrainingArguments
