@@ -94,14 +94,13 @@ def tokenize(tokenizer, question: str, answer: str):
     return full
 
 
+
 def format_example(prompt: str, answer: str) -> dict[str, str]:
     """
     Construct a question / answer pair. Consider rounding the answer to make it easier for the LLM.
     """
-    return {
-        "question": prompt,
-        "answer": float(answer),
-    }
+    return {"question": prompt, "answer": f"<answer>{answer:.3f}</answer>"
+          }
 
 
 class TokenizedDataset:
@@ -128,67 +127,58 @@ class TokenizedDataset:
 
 
 def train_model(
-    output_dir: str,
-    **kwargs,
+    output_dir: str = "homework/sft_model",
+    learning_rate: float = 5e-4,
+    num_train_epochs: int = 10,
+    per_device_train_batch_size: int = 32,
 ):
-    """
-    Train the model with the given arguments.
-    The model is saved in `output_dir`.
-    """
-    from transformers import Trainer, TrainingArguments
-    from peft import get_peft_model, LoraConfig
-
-    # Load the tokenizer and model
-    tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
-    llm = load()
-
-    # Create the LoRA config
-    config = LoraConfig(
-        r=8,
-        lora_alpha=32,
-        target_modules=["all-linear"],
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
-
-    # Create the LoRA model
-    model = get_peft_model(llm.model, config)
-    model.enable_input_require_grads()
+  from transformers import Trainer, TrainingArguments
+  from peft import get_peft_model, LoraConfig
+  tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
     
-    # Create the dataset
-    trainset = Dataset("train")
-    validset = Dataset("valid")
+  llm = BaseLLM()
 
-    train_dataset_tokenized = TokenizedDataset(tokenizer, trainset, format_example)
-    
-    # Create the training arguments
-    training_args = TrainingArguments(
-        output_dir=output_dir,
-        logging_dir=output_dir,
-        report_to="tensorboard",
-        gradient_checkpointing=True,
-        per_device_train_batch_size=32,
-        num_train_epochs=5,
-        learning_rate=1e-4,
-        save_strategy="epoch",
-        evaluation_strategy="epoch",
-        load_best_model_at_end=True,
-        save_total_limit=1,
-        **kwargs,
-    )
+  # Configure LoRA
+  config = LoraConfig(
+    target_modules="all-linear",
+    bias="none",
+    task_type="CAUSAL_LM",
+    r=8,  # Adjust rank to control model size
+    lora_alpha=32, # Adjust alpha based on rank
+    lora_dropout=0.05,
+  )
 
-    # Create the trainer
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset_tokenized,
-    )
+  llm.model = get_peft_model(llm.model, config)
+  llm.model.print_trainable_parameters()
+  llm.model.enable_input_require_grads()
 
-    # Train the model
-    trainer.train()
-    # Save the model
-    trainer.save_model(output_dir)
-    test_model(output_dir)
+  # Prepare dataset
+  train_dataset = Dataset("train")
+  formatted_train_dataset = TokenizedDataset(llm.tokenizer, train_dataset, format_example)
+
+  training_args = TrainingArguments(
+    output_dir=output_dir,
+    learning_rate=learning_rate,
+    num_train_epochs=num_train_epochs,
+    per_device_train_batch_size=per_device_train_batch_size,
+    gradient_accumulation_steps=1,
+    gradient_checkpointing=True,
+    logging_dir=output_dir,
+    report_to="tensorboard",
+    save_strategy="epoch",
+    save_total_limit=1,
+
+  )
+
+  trainer = Trainer(
+    model=llm.model,
+    args=training_args,
+    train_dataset=formatted_train_dataset,
+  )
+
+  trainer.train()
+  trainer.save_model(output_dir)
+  test_model(output_dir)
 
 
 def test_model(ckpt_path: str):
