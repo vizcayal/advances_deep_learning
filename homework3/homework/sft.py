@@ -142,7 +142,7 @@ def train_model(
     config_lora = LoraConfig(
         r=8,
         lora_alpha=32,
-        target_modules=["all-linear"],
+        target_modules="all-linear",
         bias="none",
         task_type="CAUSAL_LM",
     )
@@ -172,8 +172,6 @@ def train_model(
     trainer.train()
     trainer.save_model(output_dir)
     test_model(output_dir)
-
-
 
 
 def test_model(ckpt_path: str):
