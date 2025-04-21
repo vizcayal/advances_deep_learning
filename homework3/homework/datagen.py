@@ -17,12 +17,12 @@ def generate_dataset(output_json: str, oversample: int = 10, temperature: float 
     # Generate completions for each prompt
     dataset = []
     for prompt in tqdm(prompts, desc="Generating dataset"):
-        completion = model.batch_generate([prompt], num_return_sequences=1, temperature=temperature)
+        completion = model.batched_generate([prompt[0]], num_return_sequences=1, temperature=temperature)
         
         # Oversample if needed
         for _ in range(oversample - 1):
-            if is_correct(prompt, completion[0]):
-                dataset.append({"prompt": prompt, "completion": completion[0]})
+            if is_correct(prompt[0], completion[0]):
+                dataset.append({"prompt": prompt[0], "completion": completion[0]})
             
     # Save the dataset to the specified JSON file
     if len(dataset) > 0:
