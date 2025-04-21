@@ -11,22 +11,23 @@ def generate_dataset(output_json: str, oversample: int = 10, temperature: float 
     model = CoTModel()
 
     # Load the prompts from the JSON file
-    with open("homework/prompts.json", "r") as f:
+    with open("data/train.json", "r") as f:
         prompts = json.load(f)
 
     # Generate completions for each prompt
     dataset = []
     for prompt in tqdm(prompts, desc="Generating dataset"):
         completion = model.batch_generate([prompt], num_return_sequences=1, temperature=temperature)
-        dataset.append({"prompt": prompt, "completion": completion})
-
+        
         # Oversample if needed
         for _ in range(oversample - 1):
-            dataset.append({"prompt": prompt, "completion": completion})
-
+            if is_correct(prompt, completion[0]):
+                dataset.append({"prompt": prompt, "completion": completion[0]})
+            
     # Save the dataset to the specified JSON file
-    with open(output_json, "w") as f:
-        json.dump(dataset, f, indent=4)
+    if len(dataset) > 0:
+        with open(output_json, "w") as f:
+            json.dump(dataset, f, indent=4)
 
 def is_correct(question: str, generated_answer: str) -> bool:
     from .data import Dataset, benchmark
