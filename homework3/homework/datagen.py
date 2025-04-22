@@ -1,4 +1,4 @@
-def generate_dataset(output_json: str, oversample: int = 10, temperature: float = 0.6):
+def generate_dataset(output_json: str, oversample: int = 10, temperature: float = 0.5):
     """
     Generate a dataset of prompts and completions using the LLM.
     The dataset will be saved to the specified JSON file.
@@ -26,16 +26,15 @@ def generate_dataset(output_json: str, oversample: int = 10, temperature: float 
         prompt = model.format_prompt(prompt[0])
         
         completion = model.batched_generate([prompt], num_return_sequences=10, temperature=temperature)
-        print(f'\n{completion = }')
         # Oversample if needed
         i = 0
         correct = 1
         while (i < oversample) & (correct<3):
-
+            print(f'\n{completion[i] = }')
+        
             resp = completion[i]
             if '</answer>' in resp:
-              reasoning = resp.split('</answer>')[0]
-              reasoning = reasoning.replace('<answer>','')
+              reasoning = resp.split('</answer>')[0] + '</answer>'
               resp = resp.split('<answer>')
               resp = resp[1]
               resp = resp.split('</answer>')[0]
