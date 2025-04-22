@@ -1,4 +1,4 @@
-def generate_dataset(output_json: str, oversample: int = 5, temperature: float = 0.6):
+def generate_dataset(output_json: str, oversample: int = 10, temperature: float = 0.6):
     """
     Generate a dataset of prompts and completions using the LLM.
     The dataset will be saved to the specified JSON file.
@@ -18,16 +18,31 @@ def generate_dataset(output_json: str, oversample: int = 5, temperature: float =
     # Generate completions for each prompt
     dataset = []
     for prompt in tqdm(prompts, desc="Generating dataset"):
-        completion = model.batched_generate([prompt[0]], num_return_sequences=1, temperature=temperature)
         ground_truth = prompt[1]
+        ground_truth = float(ground_truth)
+        print('question:',prompt[0])
+        print(f'\n{ground_truth = }')
+        prompt = model.format_prompt(prompt[0])
         
+        completion = model.batched_generate([prompt], num_return_sequences=10, temperature=temperature)
+        print(f'\n{completion = }')
         # Oversample if needed
         i = 0
         correct = False
         while (i < oversample) & (not correct):
-            if is_answer_valid(completion[0], ground_truth):
-                correct = True
-                dataset.append({"prompt": prompt[0], "completion": completion[0]})
+
+            resp = completion[i]
+            if '</answer>' in resp:
+              resp = resp.split('<answer>')[1]
+              resp = resp.split('</answer>')[0]
+              print(f'{resp = }')
+              try:
+                resp = float(resp)
+                if is_answer_valid(resp, ground_truth):
+                  correct = True
+                  dataset.append({"prompt": prompt[0], "completion": resp})
+              except:
+                pass
             i += 1
 
             

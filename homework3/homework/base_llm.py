@@ -144,7 +144,7 @@ class BaseLLM:
         output = self.model.generate(
             prompt_tokenized['input_ids'],
             attention_mask = prompt_tokenized['attention_mask'],
-            max_new_tokens=60,
+            max_new_tokens=80,
             do_sample=True,
             temperature=temperature,
             num_return_sequences=num_return_sequences,

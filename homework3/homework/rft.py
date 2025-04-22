@@ -16,62 +16,12 @@ def load() -> BaseLLM:
 
     return llm
 
-
 def train_model(
-    output_dir: str = "homework/sft_model",
-    learning_rate: float = 5e-4,
-    num_train_epochs: int = 10,
-    per_device_train_batch_size: int = 32,
+    output_dir: str,
+    **kwargs,
 ):
-  from transformers import Trainer, TrainingArguments
-  from peft import get_peft_model, LoraConfig
-  tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
-    
-  llm = BaseLLM()
-
-  # Configure LoRA
-  config = LoraConfig(
-    target_modules="all-linear",
-    bias="none",
-    task_type="CAUSAL_LM",
-    r=8,  # Adjust rank to control model size
-    lora_alpha=32, # Adjust alpha based on rank
-    lora_dropout=0.05,
-  )
-
-  llm.model = get_peft_model(llm.model, config)
-  llm.model.print_trainable_parameters()
-  llm.model.enable_input_require_grads()
-
-  # Prepare dataset
-  train_dataset = Dataset("train")
-  formatted_train_dataset = TokenizedDataset(llm.tokenizer, train_dataset, format_example)
-
-  training_args = TrainingArguments(
-    output_dir=output_dir,
-    learning_rate=learning_rate,
-    num_train_epochs=num_train_epochs,
-    per_device_train_batch_size=per_device_train_batch_size,
-    gradient_accumulation_steps=1,
-    gradient_checkpointing=True,
-    logging_dir=output_dir,
-    report_to="tensorboard",
-    save_strategy="epoch",
-    save_total_limit=1,
-
-  )
-
-  trainer = Trainer(
-    model=llm.model,
-    args=training_args,
-    train_dataset=formatted_train_dataset,
-  )
-
-  trainer.train()
-  trainer.save_model(output_dir)
-  test_model(output_dir)
-
-
+    # Reuse much of the SFT code here
+    raise NotImplementedError()
 
 if __name__ == "__main__":
     from fire import Fire
