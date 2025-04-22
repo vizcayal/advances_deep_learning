@@ -129,7 +129,7 @@ class TokenizedDataset:
 def train_model(
     output_dir: str = "homework/sft_model",
     learning_rate: float = 5e-4,
-    num_train_epochs: int = 10,
+    num_train_epochs: int = 20,
     per_device_train_batch_size: int = 32,
 ):
   from transformers import Trainer, TrainingArguments

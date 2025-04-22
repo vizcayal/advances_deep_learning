@@ -79,7 +79,7 @@ def tokenize(tokenizer, question: str, answer: str, reasoning:str):
 def train_model(
     output_dir: str = "homework/rft_model",
     learning_rate: float = 1e-3,
-    num_train_epochs: int = 20,
+    num_train_epochs: int = 30,
     per_device_train_batch_size: int = 64,
 ):
   from transformers import Trainer, TrainingArguments
