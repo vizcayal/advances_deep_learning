@@ -175,7 +175,7 @@ class CoTModel(BaseLLM):
                     },
                     {
                       "role":"assistant",
-                      "content": "1 hour = 60 min. 2 hour * 60 is <answer>120.0</answer>"
+                      "content": "1 hour = 60.00 min. 2 hour * 60.00 is <answer>120.00</answer>"
                     },
                     {
                       "role":"user",
@@ -183,15 +183,15 @@ class CoTModel(BaseLLM):
                     },
                     {
                       "role":"assistant",
-                      "content": "1 century = 100 years. 1 year = 52.18 weeks. 4 centuries = 4 * 100 years = 400. 400 years * 52.1786 <answer>20871.44</answer>"
+                      "content": "1 century = 100.00 years. 1 year = 52.18 weeks. 4 centuries = 4 * 100.00 years = 400.00.  400 years * 52.1786 <answer>20871.44</answer>"
                     },
                     {
                       "role":"user",
-                      "content": "What is the conversion of 2 hour to seconds?"
+                      "content": "What is the conversion of 2 hours to seconds?"
                     },
                     {
                       "role":"assistant",
-                      "content": "1 hour = 3600 seconds. 2 hours = 2 * 3600 years = <answer>7200</answer>"
+                      "content": "1 hour = 3600.00 seconds. 2 hours = 2 * 3600.00 years = <answer>7200.00</answer>"
                     },
                     {
                       "role":"user",
@@ -199,7 +199,7 @@ class CoTModel(BaseLLM):
                     },
                     {
                       "role":"assistant",
-                      "content": "1 kg = 1000 grams. 6 kgs = 6 * 1000 years = <answer>6000</answer>"
+                      "content": "1 kg = 1000.00 grams. 6 kgs = 6 * 1000 grams = <answer>6000.00</answer>"
                     },
                     {
                       "role":"user",

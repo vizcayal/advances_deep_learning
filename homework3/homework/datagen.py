@@ -1,4 +1,4 @@
-def generate_dataset(output_json: str, oversample: int = 10, temperature: float = 0.6):
+def generate_dataset(output_json: str, oversample: int = 5, temperature: float = 0.6):
     """
     Generate a dataset of prompts and completions using the LLM.
     The dataset will be saved to the specified JSON file.
@@ -6,6 +6,7 @@ def generate_dataset(output_json: str, oversample: int = 10, temperature: float 
     from tqdm import tqdm
     import json
     from homework.cot import CoTModel
+    from homework.data import is_answer_valid
     
     # Initialize the model
     model = CoTModel()
@@ -18,11 +19,17 @@ def generate_dataset(output_json: str, oversample: int = 10, temperature: float 
     dataset = []
     for prompt in tqdm(prompts, desc="Generating dataset"):
         completion = model.batched_generate([prompt[0]], num_return_sequences=1, temperature=temperature)
+        ground_truth = prompt[1]
         
         # Oversample if needed
-        for _ in range(oversample - 1):
-            if is_correct(prompt[0], completion[0]):
+        i = 0
+        correct = False
+        while (i < oversample) & (not correct):
+            if is_answer_valid(completion[0], ground_truth):
+                correct = True
                 dataset.append({"prompt": prompt[0], "completion": completion[0]})
+            i += 1
+
             
     # Save the dataset to the specified JSON file
     if len(dataset) > 0:
