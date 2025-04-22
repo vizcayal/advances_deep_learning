@@ -20,8 +20,9 @@ def generate_dataset(output_json: str, oversample: int = 1, temperature: float =
     for prompt in tqdm(prompts, desc="Generating dataset"):
         ground_truth = prompt[1]
         ground_truth = float(ground_truth)
-        print('question:',prompt[0])
+        print('\nquestion:',prompt[0])
         print(f'\n{ground_truth = }')
+        question = prompt[0]
         prompt = model.format_prompt(prompt[0])
         
         completion = model.batched_generate([prompt], num_return_sequences=10, temperature=temperature)
@@ -33,8 +34,8 @@ def generate_dataset(output_json: str, oversample: int = 1, temperature: float =
 
             resp = completion[i]
             if '</answer>' in resp:
+              reasoning = resp.split('</answer>')[0]
               resp = resp.split('<answer>')
-              reasoning = resp[0]
               resp = resp[1]
               resp = resp.split('</answer>')[0]
               print(f'{reasoning = }')
@@ -43,7 +44,7 @@ def generate_dataset(output_json: str, oversample: int = 1, temperature: float =
                 resp = float(resp)
                 if is_answer_valid(resp, ground_truth):
                   correct = True
-                  dataset.append([prompt[0], resp, reasoning])
+                  dataset.append([question, resp, reasoning])
               except:
                 pass
             i += 1
