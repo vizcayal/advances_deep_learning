@@ -40,19 +40,47 @@ class TokenizedDataset:
         formated_data = self.format_fn(*self.data[idx])
         return tokenize(self.tokenizer, **formated_data)
 
-def format_example(prompt: str, answer: str) -> dict[str, str]:
+def format_example(prompt: str, answer: str, reasoning:str) -> dict[str, str, str]:
     """
     Construct a question / answer pair. Consider rounding the answer to make it easier for the LLM.
     """
-    return {"question": prompt, "answer": f"<answer>{answer:.3f}</answer>"
+    return {"question": prompt, 
+            "answer": f"<answer>{answer:.3f}</answer>",
+            "reasoning": reasoning
           }
 
+def tokenize(tokenizer, question: str, answer: str, reasoning:str):
+    """
+    Tokenize a data element.
+    We first append the <EOS> token to the question / answer pair.
+    Then we tokenize and construct the ground truth `labels`.
+    `labels[i] == -100` for the question or masked out parts, since we only want to supervise
+    the answer.
+    """
+    full_text = f"{question} {reasoning} {answer}{tokenizer.eos_token}"
+
+    tokenizer.padding_side = "right"
+    tokenizer.pad_token = tokenizer.eos_token
+    full = tokenizer(full_text, padding="max_length", truncation=True, max_length=128)
+
+    input_ids = full["input_ids"]
+    question_len = len(tokenizer(question)["input_ids"])
+
+    # Create labels: mask out the prompt part
+    labels = [-100] * question_len + input_ids[question_len:]
+
+    for i in range(len(labels)):
+        if full["attention_mask"][i] == 0:
+            labels[i] = -100
+
+    full["labels"] = labels
+    return full
 
 def train_model(
-    output_dir: str = "homework/sft_model",
-    learning_rate: float = 5e-4,
-    num_train_epochs: int = 10,
-    per_device_train_batch_size: int = 32,
+    output_dir: str = "homework/rft_model",
+    learning_rate: float = 1e-3,
+    num_train_epochs: int = 20,
+    per_device_train_batch_size: int = 64,
 ):
   from transformers import Trainer, TrainingArguments
   from peft import get_peft_model, LoraConfig
@@ -66,8 +94,8 @@ def train_model(
     bias="none",
     task_type="CAUSAL_LM",
     r=16,  # Adjust rank to control model size
-    lora_alpha=32, # Adjust alpha based on rank
-    lora_dropout=0.05,
+    lora_alpha=64, # Adjust alpha based on rank
+    #lora_dropout=0.1,
   )
 
   llm.model = get_peft_model(llm.model, config)
@@ -75,7 +103,7 @@ def train_model(
   llm.model.enable_input_require_grads()
 
   # Prepare dataset
-  train_dataset = Dataset("train")
+  train_dataset = Dataset("rft")
   formatted_train_dataset = TokenizedDataset(llm.tokenizer, train_dataset, format_example)
 
   training_args = TrainingArguments(
