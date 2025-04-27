@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
 
-import cv2
 import fire
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image, ImageDraw
 
 # Define object type mapping
 OBJECT_TYPES = {
@@ -16,7 +16,7 @@ OBJECT_TYPES = {
     6: "Special Element 3",
 }
 
-# Define colors for different object types (BGR format)
+# Define colors for different object types (RGB format)
 COLORS = {
     1: (0, 255, 0),  # Green for karts
     2: (255, 0, 0),  # Blue for track boundaries
@@ -67,23 +67,20 @@ def draw_detections(
     Returns:
         The annotated image as a numpy array
     """
-    # Read the image
-    image = cv2.imread(image_path)
-    if image is None:
+    # Read the image using PIL
+    pil_image = Image.open(image_path)
+    if pil_image is None:
         raise ValueError(f"Could not read image at {image_path}")
 
     # Get image dimensions
-    img_height, img_width = image.shape[:2]
+    img_width, img_height = pil_image.size
 
-    # Convert BGR to RGB for matplotlib
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # Create a drawing context
+    draw = ImageDraw.Draw(pil_image)
 
     # Read the info.json file
     with open(info_path) as f:
         info = json.load(f)
-
-    # Get kart names
-    # kart_names = info.get("karts", [])
 
     # Extract frame ID and view index from image filename
     _, view_index = extract_frame_info(image_path)
@@ -93,7 +90,7 @@ def draw_detections(
         frame_detections = info["detections"][view_index]
     else:
         print(f"Warning: View index {view_index} out of range for detections")
-        return image
+        return np.array(pil_image)
 
     # Calculate scaling factors
     scale_x = img_width / ORIGINAL_WIDTH
@@ -127,14 +124,15 @@ def draw_detections(
         else:
             color = COLORS.get(class_id, (255, 255, 255))
 
-        # Draw bounding box
-        cv2.rectangle(image, (x1_scaled, y1_scaled), (x2_scaled, y2_scaled), color, thickness)
+        # Draw bounding box using PIL
+        draw.rectangle([(x1_scaled, y1_scaled), (x2_scaled, y2_scaled)], outline=color, width=thickness)
 
-    return image
+    # Convert PIL image to numpy array for matplotlib
+    return np.array(pil_image)
 
 
 def extract_kart_objects(
-    info_path: str, view_index: int, img_width: int = 100, img_height: int = 150, min_box_size: int = 5
+    info_path: str, view_index: int, img_width: int = 150, img_height: int = 100, min_box_size: int = 5
 ) -> list:
     """
     Extract kart objects from the info.json file, including their center points and identify the center kart.
@@ -170,7 +168,7 @@ def extract_track_info(info_path: str) -> str:
     raise NotImplementedError("Not implemented")
 
 
-def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 100, img_height: int = 150) -> list:
+def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img_height: int = 100) -> list:
     """
     Generate question-answer pairs for a given view.
 

@@ -205,39 +205,12 @@ class CoTModel(BaseLLM):
                       "role":"user",
                       "content": question
                     },
-                   
-
 
                   ]
         formatted_prompt = self.tokenizer.apply_chat_template(message, add_generation_prompt = True, tokenize = False )
         return formatted_prompt
     
-    def batch_generate(self, prompts: list[str], num_return_sequences: int = 1, temperature: float = 0.01) -> list[str]:
-        """
-        Generate a batch of answers from the model.
-        """
-        # Tokenize the prompts
-        tokenized_prompts = self.tokenizer(
-            prompts,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=self.tokenizer.model_max_length,
-        ).to(self.device)
 
-        # Generate the output
-        output = self.model.generate(
-            **tokenized_prompts,
-            max_new_tokens=60,
-            do_sample=True,
-            temperature=temperature,
-            num_return_sequences=num_return_sequences,
-            eos_token_id=self.tokenizer.eos_token_id,
-        )
-
-        # Decode the output
-        output = self.tokenizer.batch_decode(output, skip_special_tokens=False)
-        return output
 
 def load() -> CoTModel:
     return CoTModel()
