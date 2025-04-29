@@ -256,102 +256,106 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     if not karts:
         return []
 
-    # 1. Ego car question
+     # 1. What kart is the ego car?
     if ego_kart:
         qa_pairs.append({
             "question": "What kart is the ego car?",
-            "answer": ego_kart["kart_name"],
-            "image_file": image_file
+            "answer": ego_kart["kart_name"]
         })
 
-    # 2. Total karts question
-    qa_pairs.append({
-        "question": "How many karts are there in the scenario?",
-        "answer": str(len(karts)),
-        "image_file": image_file
-    })
-
-    # 3. Track information questions
-    qa_pairs.append({
-        "question": "What track is this?",
-        "answer": track_name,
-        "image_file": image_file
-    })
-
-    if ego_kart:
         ego_x, ego_y = ego_kart["center"]
-        left_count = 0
-        right_count = 0
-        front_count = 0
-        behind_count = 0
 
         for kart in karts:
             if kart != ego_kart:
-                kart_name = kart["kart_name"]
-                kart_x, kart_y = kart["center"]
+                other_kart_name = kart["kart_name"]
+                other_x, other_y = kart["center"]
 
-                # 4. Relative position questions for each kart
-                if kart_x < ego_x:
+                # Is {other_kart} to the left or right of the ego car?
+                if other_x < ego_x:
                     qa_pairs.append({
-                        "question": f"Is {kart_name} to the left or right of the ego car?",
-                        "answer": "left",
-                        "image_file": image_file
+                        "question": f"Is {other_kart_name} to the left or right of the ego car?",
+                        "answer": "left"
                     })
-                elif kart_x > ego_x:
+                elif other_x > ego_x:
                     qa_pairs.append({
-                        "question": f"Is {kart_name} to the left or right of the ego car?",
-                        "answer": "right",
-                        "image_file": image_file
+                        "question": f"Is {other_kart_name} to the left or right of the ego car?",
+                        "answer": "right"
                     })
 
-                if kart_y < ego_y:
+                # Is {other_kart} in front of or behind the ego car?
+                if other_y < ego_y:
                     qa_pairs.append({
-                        "question": f"Is {kart_name} in front of or behind the ego car?",
-                        "answer": "in front of",
-                        "image_file": image_file
+                        "question": f"Is {other_kart_name} in front of or behind the ego car?",
+                        "answer": "front"
                     })
-                elif kart_y > ego_y:
+                elif other_y > ego_y:
                     qa_pairs.append({
-                        "question": f"Is {kart_name} in front of or behind the ego car?",
-                        "answer": "behind",
-                        "image_file": image_file
+                        "question": f"Is {other_kart_name} in front of or behind the ego car?",
+                        "answer": "behind"
                     })
 
-                # 5. Counting questions
-                if kart_x < ego_x:
-                    left_count += 1
-                elif kart_x > ego_x:
-                    right_count += 1
+                # Where is {other_kart} relative to the ego car?
+                relative_position = []
+                if other_y < ego_y:
+                    relative_position.append("front")
+                elif other_y > ego_y:
+                    relative_position.append("back")
 
-                if kart_y < ego_y:
-                    front_count += 1
-                elif kart_y > ego_y:
-                    behind_count += 1
+                if other_x < ego_x:
+                    relative_position.append("left")
+                elif other_x > ego_x:
+                    relative_position.append("right")
 
+                if relative_position:
+                    qa_pairs.append({
+                        "question": f"Where is {other_kart_name} relative to the ego car?",
+                        "answer": " and ".join(relative_position)
+                    })
+
+        # How many karts are to the left of the ego car?
+        left_count = sum(1 for kart in karts if kart != ego_kart and kart["center"][0] < ego_x)
         qa_pairs.append({
             "question": "How many karts are to the left of the ego car?",
-            "answer": str(left_count),
-            "image_file": image_file
+            "answer": str(left_count)
         })
+
+        # How many karts are to the right of the ego car?
+        right_count = sum(1 for kart in karts if kart != ego_kart and kart["center"][0] > ego_x)
         qa_pairs.append({
             "question": "How many karts are to the right of the ego car?",
-            "answer": str(right_count),
-            "image_file": image_file
+            "answer": str(right_count)
         })
+
+        # How many karts are in front of the ego car?
+        front_count = sum(1 for kart in karts if kart != ego_kart and kart["center"][1] < ego_y)
         qa_pairs.append({
             "question": "How many karts are in front of the ego car?",
-            "answer": str(front_count),
-            "image_file": image_file
+            "answer": str(front_count)
         })
+
+        # How many karts are behind the ego car?
+        behind_count = sum(1 for kart in karts if kart != ego_kart and kart["center"][1] > ego_y)
         qa_pairs.append({
             "question": "How many karts are behind the ego car?",
-            "answer": str(behind_count),
-            "image_file": image_file
+            "answer": str(behind_count)
         })
+
+    # How many karts are there in the scenario?
+    qa_pairs.append({
+        "question": "How many karts are there in the scenario?",
+        "answer": str(len(karts))
+    })
+
+    # What track is this?
+    qa_pairs.append({
+        "question": "What track is this?",
+        "answer": track_name
+    })
 
     return qa_pairs
 
-def generate_all(data_dir: str = "../data/train_demo"):
+
+def generate_all(data_dir: str = "../data/train"):
     """
     Generates question-answer pairs for all info.json files in the specified directory
     and saves them into separate json files.
@@ -360,7 +364,7 @@ def generate_all(data_dir: str = "../data/train_demo"):
         data_dir: Path to the directory containing the info.json files.
     """
     data_path = Path(data_dir)
-    output_dir = data_path
+    output_dir = Path("../data/train_demo")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     all_qa_pairs = []
@@ -377,6 +381,7 @@ def generate_all(data_dir: str = "../data/train_demo"):
         base_name = info_file.stem.replace("_info", "")
     
     combined_output_file = output_dir / "combined_qa_pairs.json"
+    print(f'{combined_output_file = }')
     with open(combined_output_file, 'w') as outfile:
         json.dump(all_qa_pairs, outfile, indent=4)
     print(f"Combined all QA pairs into {combined_output_file}") 
