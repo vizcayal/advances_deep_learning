@@ -195,7 +195,7 @@ def extract_kart_objects(
     for kart in karts:
       if kart["instance_id"] == center_kart_id:
         kart["is_center_kart"] = True
-      print(f'{kart = }')
+      #print(f'{kart = }')
 
     return karts
 
@@ -351,7 +351,7 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
 
     return qa_pairs
 
-def generate_all(data_dir: str = "../data/train"):
+def generate_all(data_dir: str = "../data/train_demo"):
     """
     Generates question-answer pairs for all info.json files in the specified directory
     and saves them into separate json files.
