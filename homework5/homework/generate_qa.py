@@ -246,11 +246,16 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     # How many karts are to the right of the ego car?
     # How many karts are in front of the ego car?
     # How many karts are behind the ego car?
-
+    two_digit = f"{view_index:02d}"
     image_file = info_path.replace("../data/","")
+    image_file = image_file.replace(".json",".jpg")
+    image_file = image_file.replace("_info","_"+two_digit + "_im")
+    print(f'{image_file = }')
+
+
     qa_pairs = []
     karts = extract_kart_objects(info_path, view_index, img_width, img_height)
-    print(f'{karts = }')
+    #print(f'{karts = }')
     track_name = extract_track_info(info_path)
     ego_kart = next((kart for kart in karts if kart["is_center_kart"]), None)
 
@@ -385,7 +390,7 @@ def generate_all(data_dir: str = "../data/train"):
     all_qa_pairs = []
 
     for id, info_file in enumerate(data_path.glob("*_info.json")):
-        print(f'{id}. open file {info_file}')
+        print(f'{id = }. open file {info_file = }')
         with open(info_file, 'r') as f:
             info = json.load(f)
             num_views = len(info.get("detections", []))

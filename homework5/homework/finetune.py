@@ -248,9 +248,9 @@ def evaluate(model: nn.Module, val_loader: DataLoader) -> float:
 
 def demo_train():
     train(
-        train_dataset_name="train",
+        train_dataset_name="train_demo",
         output_dir="test_train",
-        num_train_epochs=1,
+        num_train_epochs=0.05,
         per_device_train_batch_size=1,
         num_workers=1,
         gradient_accumulation_steps=1,
