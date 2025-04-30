@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 DATA_DIR = Path(__file__).parent.parent / "data"
+print(f'{DATA_DIR  = }')
 
 
 class VQADataset:
@@ -23,6 +24,7 @@ class VQADataset:
 
         # Find all QA pair files for the split
         qa_files = list(self.data_dir.glob(f"{split}/*_qa_pairs.json"))
+        print(f'{qa_files = }')
 
         for qa_file in qa_files:
             with open(qa_file) as f:

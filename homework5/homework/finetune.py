@@ -137,6 +137,10 @@ def train(
     """
     vlm = BaseVLM()
 
+    print(f'{data_dir = }')
+    print(f'{train_dataset_name = }')
+    print(f'{output_dir = }')
+
     # Create output directory
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -170,6 +174,7 @@ def train(
 
     # Prepare datasets
     train_dataset = VQADataset(train_dataset_name, data_dir)
+    
 
     train_dataset = VQADatasetForTraining(train_dataset, processor)
 
@@ -243,8 +248,8 @@ def evaluate(model: nn.Module, val_loader: DataLoader) -> float:
 
 def demo_train():
     train(
-        train_dataset_name="train_demo",
-        output_dir="demo_train",
+        train_dataset_name="train",
+        output_dir="test_train",
         num_train_epochs=1,
         per_device_train_batch_size=1,
         num_workers=1,
