@@ -261,11 +261,11 @@ def train_model():
     train(
         train_dataset_name="train",
         output_dir="homework/vlm_model",
-        num_train_epochs=0.005,
+        num_train_epochs=0.2,
         per_device_train_batch_size=8,
-        num_workers=1,
+        num_workers=16,
         gradient_accumulation_steps=1,
-        learning_rate=1e-4,
+        learning_rate=2e-4,
     )
 
   
