@@ -176,8 +176,11 @@ def extract_kart_objects(
         x2_scaled = int(x2 * scale_x)
         y2_scaled = int(y2 * scale_y)
 
-        if x1_scaled < 0 or x2_scaled > img_width or y1_scaled < 0 or y2_scaled > img_height:
-          continue
+        if (x2_scaled - x1_scaled) < min_box_size or (y2_scaled - y1_scaled) < min_box_size:
+            continue
+
+        if x2_scaled < 0 or x1_scaled > img_width or y2_scaled < 0 or y1_scaled > img_height:
+            continue
 
         center_x = (x1_scaled + x2_scaled) / 2
         center_y = (y1_scaled + y2_scaled) / 2
@@ -384,7 +387,7 @@ def generate_all(data_dir: str = "../data/train"):
         data_dir: Path to the directory containing the info.json files.
     """
     data_path = Path(data_dir)
-    output_dir = Path("../data/train_demo")
+    output_dir = Path("../data/train")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     all_qa_pairs = []

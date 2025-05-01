@@ -248,14 +248,27 @@ def evaluate(model: nn.Module, val_loader: DataLoader) -> float:
 
 def demo_train():
     train(
-        train_dataset_name="train_demo",
+        train_dataset_name="train",
         output_dir="homework/vlm_model",
         num_train_epochs=0.001,
-        per_device_train_batch_size=1,
+        per_device_train_batch_size=8,
         num_workers=1,
         gradient_accumulation_steps=1,
         learning_rate=1e-8,
     )
+
+def train_model():
+    train(
+        train_dataset_name="train",
+        output_dir="homework/vlm_model",
+        num_train_epochs=0.005,
+        per_device_train_batch_size=8,
+        num_workers=1,
+        gradient_accumulation_steps=1,
+        learning_rate=1e-4,
+    )
+
+  
 
 
 def test_model(ckpt_path: str, val_dataset: str = "valid_grader"):
@@ -270,4 +283,4 @@ def test_model(ckpt_path: str, val_dataset: str = "valid_grader"):
 if __name__ == "__main__":
     from fire import Fire
 
-    Fire({"demo_train": demo_train, "train": train, "test": test_model})
+    Fire({"demo_train": demo_train, "train": train, "test": test_model, "train_model": train_model})
