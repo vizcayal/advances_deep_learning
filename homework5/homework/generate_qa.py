@@ -329,31 +329,35 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
 
         # How many karts are to the left of the ego car?
         left_count = sum(1 for kart in karts if kart != ego_kart and kart["center"][0] < ego_x)
-        qa_pairs.append({
-            "question": "How many karts are to the left of the ego car?",
-            "answer": str(left_count),
-            "image_file": image_file 
-        })
+        if left_count > 0:
+          qa_pairs.append({
+              "question": "How many karts are to the left of the ego car?",
+              "answer": str(left_count),
+              "image_file": image_file 
+          })
 
         # How many karts are to the right of the ego car?
         right_count = sum(1 for kart in karts if kart != ego_kart and kart["center"][0] > ego_x)
-        qa_pairs.append({
+        if right_count > 0 :
+          qa_pairs.append({
             "question": "How many karts are to the right of the ego car?",
             "answer": str(right_count),
             "image_file": image_file 
-        })
+          })
 
         # How many karts are in front of the ego car?
         front_count = sum(1 for kart in karts if kart != ego_kart and kart["center"][1] < ego_y)
-        qa_pairs.append({
+        if front_count > 0:
+          qa_pairs.append({
             "question": "How many karts are in front of the ego car?",
             "answer": str(front_count),
             "image_file": image_file 
-        })
+            })
 
         # How many karts are behind the ego car?
         behind_count = sum(1 for kart in karts if kart != ego_kart and kart["center"][1] > ego_y)
-        qa_pairs.append({
+        if behind_count > 0:
+          qa_pairs.append({
             "question": "How many karts are behind the ego car?",
             "answer": str(behind_count),
             "image_file": image_file 
@@ -361,7 +365,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
         })
 
     # How many karts are there in the scenario?
-    qa_pairs.append({
+    if len(karts) > 0:
+      qa_pairs.append({
         "question": "How many karts are there in the scenario?",
         "answer": str(len(karts)),
         "image_file": image_file 
